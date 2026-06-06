@@ -1,7 +1,10 @@
 package com.app.shopping.service.product;
 
+import com.app.shopping.dto.ProductRequest;
 import com.app.shopping.exceptions.ProductNotFoundException;
+import com.app.shopping.model.Category;
 import com.app.shopping.model.Product;
+import com.app.shopping.repository.CategoryRepository;
 import com.app.shopping.repository.ProductRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -12,10 +15,33 @@ import java.util.List;
 @RequiredArgsConstructor
 public class ProductService implements IProductService {
     private final ProductRepository productRepository;
+    private final CategoryRepository categoryRepository;
 
     @Override
-    public void addProduct(Product product) {
+    public Product addProduct(ProductRequest request) {
+        Product product = new Product();
+        apply(product, request);
+        return productRepository.save(product);
+    }
 
+    private void apply(Product product, ProductRequest request) {
+        product.setName(request.name());
+        product.setBrand(request.brand());
+        product.setPrice(request.price());
+        product.setInventory(request.inventory());
+        product.setDescription(request.description());
+        product.setCategory(resolveCategory(request.category()));
+    }
+
+    private Category resolveCategory(String name) {
+        if (name == null || name.isBlank()) {
+            return null;
+        }
+        return categoryRepository.findByName(name).orElseGet(() -> {
+            Category category = new Category();
+            category.setName(name);
+            return categoryRepository.save(category);
+        });
     }
 
     @Override
@@ -31,8 +57,10 @@ public class ProductService implements IProductService {
     }
 
     @Override
-    public void updateProduct(Product product, Long productId) {
-
+    public Product updateProduct(ProductRequest request, Long productId) {
+        Product product = getProductById(productId);
+        apply(product, request);
+        return productRepository.save(product);
     }
 
     @Override
